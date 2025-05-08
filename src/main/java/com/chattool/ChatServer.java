@@ -11,35 +11,45 @@ import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.util.CharsetUtil;
 
+// チャットサーバーを起動するクラス
 public class ChatServer {
-    private final int port;
+    private final int port; // サーバーが待ち受けるポート番号
 
+    // コンストラクタでポート番号を設定
     public ChatServer(int port) {
         this.port = port;
     }
 
+    // サーバーを起動するメソッド
     public void run() throws InterruptedException {
-        EventLoopGroup boss = new NioEventLoopGroup();
-        EventLoopGroup worker = new NioEventLoopGroup();
+        // 接続を待ち受けるためのスレッドグループを作成
+        EventLoopGroup boss = new NioEventLoopGroup(); // 接続を受け付けるスレッドグループ
+        EventLoopGroup worker = new NioEventLoopGroup(); // データ処理を行うスレッドグループ
 
         try {
+            // サーバーの初期化と設定を行う
             ServerBootstrap b = new ServerBootstrap();
-            b.group(boss, worker)
-             .channel(NioServerSocketChannel.class)
+            b.group(boss, worker) // スレッドグループを設定
+             .channel(NioServerSocketChannel.class) // サーバーソケットのチャネルタイプを指定
              .childHandler(new ChannelInitializer<SocketChannel>() {
                  @Override
                  protected void initChannel(SocketChannel ch) {
+                     // クライアントからの接続ごとにパイプラインを設定
                      ch.pipeline()
-                       .addLast(new LineBasedFrameDecoder(8192)) // フレーム分割
-                       .addLast(new StringDecoder(CharsetUtil.UTF_8)) // 文字列デコーダ
-                       .addLast(new ChatServerHandler()); // サーバーハンドラ
+                       .addLast(new LineBasedFrameDecoder(8192)) // 行単位でメッセージを分割
+                       .addLast(new StringDecoder(CharsetUtil.UTF_8)) // UTF-8で文字列にデコード
+                       .addLast(new ChatServerHandler()); // メッセージ処理を行うハンドラを追加
                  }
              });
 
+            // サーバーを指定したポートでバインドして起動
             ChannelFuture f = b.bind(port).sync();
-            System.out.println("ChatServer started on port " + port);
+            System.out.println("ChatServer started on port " + port); // サーバー起動メッセージを出力
+
+            // サーバーソケットが閉じられるまで待機
             f.channel().closeFuture().sync();
         } finally {
+            // サーバー停止時にスレッドグループをシャットダウン
             boss.shutdownGracefully();
             worker.shutdownGracefully();
         }
