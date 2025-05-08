@@ -1,0 +1,11 @@
+com\chattool\ChatServerHandler.class
+com\chattool\model\ChatMessage.class
+com\chattool\model\Destination.class
+com\chattool\MessageCodec.class
+com\chattool\util\DestinationLoader.class
+com\chattool\util\DestinationLoader$1.class
+com\chattool\ChatClientHandler.class
+com\chattool\ChatServer$1.class
+com\chattool\ChatClient$1.class
+com\chattool\ChatClient.class
+com\chattool\ChatServer.class

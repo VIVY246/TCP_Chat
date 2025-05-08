@@ -3,7 +3,6 @@ package com;
 import com.chattool.ChatClient;
 import com.chattool.ChatServer;
 import com.chattool.util.DestinationLoader;
-import com.chattool.model.ChatMessage;
 
 import java.util.Map;
 import java.util.Scanner;
@@ -45,8 +44,8 @@ public class Main {
                     continue;
                 }
 
-                ChatMessage message = new ChatMessage(from, to, msg, System.currentTimeMillis());
-                new ChatClient(ip, port).send(message);
+                // メッセージを送信
+                new ChatClient(ip, port).send(from, to, msg);
             }
         }
     }

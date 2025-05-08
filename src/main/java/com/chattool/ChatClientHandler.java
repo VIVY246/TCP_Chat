@@ -1,13 +1,12 @@
 package com.chattool;
 
-import com.chattool.model.ChatMessage;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.ChannelHandlerContext;
 
-public class ChatClientHandler extends SimpleChannelInboundHandler<ChatMessage> {
+public class ChatClientHandler extends SimpleChannelInboundHandler<String> {
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, ChatMessage msg) {
-        System.out.println("📨 " + msg);
+    protected void channelRead0(ChannelHandlerContext ctx, String msg) {
+        System.out.println("📨 受信メッセージ: " + msg);
     }
     
     @Override
