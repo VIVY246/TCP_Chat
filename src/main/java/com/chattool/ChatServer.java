@@ -1,5 +1,7 @@
 package com.chattool;
 
+import java.util.concurrent.CountDownLatch;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -13,11 +15,15 @@ import io.netty.util.CharsetUtil;
 
 // チャットサーバーを起動するクラス
 public class ChatServer {
+    private final String myIp; // サーバーのホスト名またはIPアドレス
     private final int port; // サーバーが待ち受けるポート番号
+    private final CountDownLatch latch; // スレッドの同期を行うためのカウントダウンラッチ
 
     // コンストラクタでポート番号を設定
-    public ChatServer(int port) {
+    public ChatServer(String myIp, int port, CountDownLatch latch) {
+        this.myIp = myIp; // サーバーのホスト名またはIPアドレスを設定
         this.port = port;
+        this.latch = latch; // スレッドの同期を行うためのカウントダウンラッチを設定
     }
 
     // サーバーを起動するメソッド
@@ -43,13 +49,16 @@ public class ChatServer {
              });
 
             // サーバーを指定したポートでバインドして起動
-            ChannelFuture f = b.bind(port).sync();
+            ChannelFuture f = b.bind(myIp, port).sync();
             System.out.println("ChatServer started on port " + port); // サーバー起動メッセージを出力
+
+            latch.countDown(); // カウントダウンラッチをデクリメント
 
             // サーバーソケットが閉じられるまで待機
             f.channel().closeFuture().sync();
         } finally {
             // サーバー停止時にスレッドグループをシャットダウン
+            System.out.println("ChatServer shutting down...");
             boss.shutdownGracefully();
             worker.shutdownGracefully();
         }

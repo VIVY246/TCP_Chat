@@ -1,22 +1,38 @@
 package com;
 
-import com.chattool.ChatClient;
-import com.chattool.ChatServer;
-import com.chattool.util.DestinationLoader;
-
 import java.util.Map;
 import java.util.Scanner;
+import java.util.concurrent.CountDownLatch;
+
+import com.chattool.ChatClient;
+import com.chattool.ChatServer;
+import com.chattool.model.Destination;
+import com.chattool.util.DestinationLoader;
+import com.chattool.util.IpToNameResolver;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        int port = 50000; // サーバーとクライアントが通信するためのポート番号
+        String mappingsFile = "JSON/mappings.json"; // マッピングファイルのパス
+        Map<String, Destination> mapping = DestinationLoader.load(mappingsFile); // 宛先名とDestinationのマッピングをロード
+
+        String hostName = "O";
+        Destination myDest = mapping.get(hostName); // 自分の宛先を取得
+        if(myDest == null) {
+            System.out.println("自分の宛先が見つかりません");
+            System.exit(0);
+        }
+
+        String myIp = myDest.getIpAddress(); // 自分のIPアドレスを取得
+        int myPort = myDest.getPort(); // 自分のポート番号を取得
+        final int MESSAGE_SENT_AFTER_LATENCY_MS = 200;
+        CountDownLatch serverStartedLatch = new CountDownLatch(1); // スレッドの同期を行うためのカウントダウンラッチ
 
         // サーバーを別スレッドで起動
         System.out.println("サーバーを起動します...");
         new Thread(() -> {
             try {
                 // ChatServerを起動し、指定したポートで接続を待ち受ける
-                new ChatServer(port).run();
+                new ChatServer(myIp, myPort, serverStartedLatch).run();
                 System.out.println("サーバーが正常に起動しました");
             } catch (InterruptedException e) {
                 // サーバー起動中にエラーが発生した場合の処理
@@ -25,44 +41,54 @@ public class Main {
             }
         }).start();
 
-        // 宛先マッピングファイル（mappings.json）を読み込む
-        System.out.println("mappings.jsonを読み込みます...");
-        String mappingsFile = "JSON/mappings.json"; // マッピングファイルのパス
-        Map<String, String> mapping = DestinationLoader.load(mappingsFile); // 宛先名とIPアドレスのマッピングをロード
-        System.out.println("mappings.jsonの読み込みが完了しました");
+        Map<String, String> reverseMap = IpToNameResolver.buildReverseMap(mapping); // 宛先名とIPアドレスの逆マッピングを作成
+        IpToNameResolver.setReverseMap(reverseMap); // 逆マッピングを設定
 
+        serverStartedLatch.await(); // サーバーが起動するまで待機
+        
         // ユーザー入力を受け付けるためのScannerを作成
         try (Scanner scanner = new Scanner(System.in)) {
-            // ユーザーの名前を入力
-            System.out.print("あなたの名前を入力してください: ");
-            String from = scanner.nextLine(); // 入力された名前を取得
-            System.out.println("名前が入力されました: " + from);
-
-            // 無限ループでメッセージ送信処理を繰り返す
             while (true) {
-                // 宛先名を入力
+                Thread.sleep(MESSAGE_SENT_AFTER_LATENCY_MS); // メッセージ送信後の遅延をシミュレート
+
                 System.out.print("宛先を入力してください: ");
                 String to = scanner.nextLine(); // 入力された宛先名を取得
-                System.out.println("宛先が入力されました: " + to);
-
-                // メッセージ内容を入力
-                System.out.print("メッセージを入力してください: ");
-                String msg = scanner.nextLine(); // 入力されたメッセージを取得
-                System.out.println("メッセージが入力されました: " + msg);
-
-                // 宛先名に対応するIPアドレスをマッピングから取得
-                String ip = mapping.get(to);
-                if (ip == null) {
+                Destination dest = mapping.get(to); // 宛先名からDestinationを取得
+                if (dest == null) {
                     // 宛先が見つからない場合のエラーメッセージ
-                    System.out.println("❌ 宛先が見つかりません");
+                    System.out.println("宛先が見つかりません");
                     continue; // 次の入力を待つ
                 }
 
-                // メッセージを送信
+                String ip = dest.getIpAddress(); // 宛先のIPアドレスを取得
+                int port = dest.getPort(); // 宛先のポート番号を取得
+                if(ip == null || port <= 0 || port > 65535) {
+                    System.out.println("宛先のIPアドレスまたはポート番号が無効です");
+                    continue; // 次の入力を待つ
+                }
+                
+                System.out.print("メッセージを入力してください: ");
+                String msg = scanner.nextLine(); // 入力されたメッセージを取得
+                while(msg.trim().isEmpty()) {
+                    System.out.print("\nメッセージを入力してください: ");
+                    msg = scanner.nextLine().trim(); // 空でないメッセージを取得
+                }
+                String sendMsg = msg;
+
                 System.out.println("メッセージを送信します...");
-                new ChatClient(ip, port).send(from, to, msg); // ChatClientを使用してメッセージを送信
-                System.out.println("メッセージが送信されました");
+
+                new Thread(() -> {
+                    try{
+                        new ChatClient(myIp, myPort, to).send(sendMsg);
+                    } catch (InterruptedException e) {
+                        // メッセージ送信中にエラーが発生した場合の処理
+                        System.err.println("メッセージの送信中にエラーが発生しました: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }).start();
             }
+        }finally {
+            ChatClient.shutdown(); // イベントループグループをシャットダウン
         }
     }
 }
