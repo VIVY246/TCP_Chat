@@ -1,21 +1,35 @@
 package com.chattool;
 
-import io.netty.channel.SimpleChannelInboundHandler;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+import com.chattool.util.ChatLogger;
+
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
 
 // クライアント側で受信したメッセージを処理するハンドラクラス
-public class ChatClientHandler extends SimpleChannelInboundHandler<String> {
+public class ChatClientHandler extends ChannelOutboundHandlerAdapter {
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, String msg) {
-        // サーバーから受信したメッセージをコンソールに出力
-        System.out.println("📨 受信メッセージ: " + msg);
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        String sendTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")); // メッセージ送信時刻を取得
+        System.out.println("[" + sendTime + "] " + msg); // メッセージをコンソールに出力
+
+        ChatLogger.log(ctx.name(),"SEND", (String) msg); // ログ出力
+        msg = msg + "\n"; // メッセージの末尾に改行を追加
+        ctx.writeAndFlush(msg);
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        // ハンドラ内で例外が発生した場合の処理
-        System.err.println("通信エラー: " + cause.getMessage()); // エラーメッセージを出力
-        ctx.close(); // 接続を閉じる
+        if(cause instanceof IOException){
+            System.err.println("リモートホストによって接続が切断されました");
+        }
+
+        System.err.println("エラーが発生しました: " + cause.getMessage()); // エラーメッセージを出力
+        ctx.close(); // チャネルを閉じる
     }
 }

@@ -1,10 +1,5 @@
 package com.chattool;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-
-import com.chattool.util.ChatLogger;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -20,15 +15,13 @@ import io.netty.util.CharsetUtil;
 public class ChatClient {
     private final String host_ip; // サーバーのホスト名またはIPアドレス
     private final int port;    // サーバーのポート番号
-    private final String logKey; // ログ出力用のキー
 
     private static final EventLoopGroup group = new NioEventLoopGroup(); // イベントループグループを作成
 
     // コンストラクタでホスト名とポート番号を設定
-    public ChatClient(String host, int port, String logKey) {
+    public ChatClient(String host, int port) {
         this.host_ip = host;
         this.port = port;
-        this.logKey = logKey; // ログ出力用のキーを設定
     }
 
     // サーバーに接続してメッセージを送信するメソッド
@@ -53,15 +46,7 @@ public class ChatClient {
             ChannelFuture f = b.connect(host_ip, port).sync();
 
             // サーバーにメッセージを送信
-            f.channel().writeAndFlush(message + "\n").addListener(writeFuture -> {
-                if (writeFuture.isSuccess()) {
-                    String sendTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")); // 現在の日時を取得
-                    System.out.println("[ " + sendTime + "] メッセージが送信されました"); // 送信したメッセージをコンソールに出力
-                    ChatLogger.log(logKey, "SEND   ", message); // ログ出力
-                } else {
-                    System.err.println("メッセージの送信に失敗しました: " + writeFuture.cause().getMessage()); // メッセージ送信失敗メッセージを出力
-                }
-            });
+            f.channel().writeAndFlush(message);
 
             // 接続が閉じられるまで待機
             f.channel().closeFuture().sync();

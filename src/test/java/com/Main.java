@@ -19,7 +19,7 @@ public class Main {
         Destination myDest = mapping.get(hostName); // 自分の宛先を取得
         if(myDest == null) {
             System.out.println("自分の宛先が見つかりません");
-            System.exit(0);
+            System.exit(0);;
         }
 
         String myIp = myDest.getIpAddress(); // 自分のIPアドレスを取得
@@ -37,7 +37,7 @@ public class Main {
             } catch (InterruptedException e) {
                 // サーバー起動中にエラーが発生した場合の処理
                 System.err.println("サーバーの起動中にエラーが発生しました: " + e.getMessage());
-                e.printStackTrace();
+                //e.printStackTrace();
             }
         }).start();
 
@@ -79,11 +79,11 @@ public class Main {
 
                 new Thread(() -> {
                     try{
-                        new ChatClient(myIp, myPort, to).send(sendMsg);
+                        new ChatClient(myIp, myPort).send(sendMsg);
                     } catch (InterruptedException e) {
                         // メッセージ送信中にエラーが発生した場合の処理
                         System.err.println("メッセージの送信中にエラーが発生しました: " + e.getMessage());
-                        e.printStackTrace();
+                        //e.printStackTrace();
                     }
                 }).start();
             }
