@@ -3,6 +3,8 @@ package com;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.chattool.ChatClient;
 import com.chattool.ChatServer;
@@ -12,6 +14,8 @@ import com.chattool.util.IpToNameResolver;
 
 public class Main {
     public static void main(String[] args) throws Exception {
+        Map<String, ExecutorService> sendExecutors = new java.util.concurrent.ConcurrentHashMap<>(); // 宛先ごとのExecutorServiceを管理するマップ
+
         String mappingsFile = "JSON/mappings.json"; // マッピングファイルのパス
         Map<String, Destination> mapping = DestinationLoader.load(mappingsFile); // 宛先名とDestinationのマッピングをロード
 
@@ -77,17 +81,22 @@ public class Main {
 
                 System.out.println("メッセージを送信します...");
 
-                new Thread(() -> {
-                    try{
-                        new ChatClient(myIp, myPort).send(sendMsg);
-                    } catch (InterruptedException e) {
-                        // メッセージ送信中にエラーが発生した場合の処理
-                        System.err.println("メッセージの送信中にエラーが発生しました: " + e.getMessage());
-                        //e.printStackTrace();
-                    }
-                }).start();
+                sendExecutors
+                    .computeIfAbsent(to, k -> Executors.newSingleThreadExecutor())
+                    .submit(() -> {
+                        try {
+                            // ChatClientを作成し、指定した宛先にメッセージを送信
+                            new ChatClient(ip, port).send(sendMsg);
+                        } catch (Exception e) {
+                            // メッセージ送信中にエラーが発生した場合の処理
+                            System.err.println("メッセージの送信中にエラーが発生しました: " + e.getMessage());
+                        }
+                    });
             }
         }finally {
+            for(ExecutorService executor : sendExecutors.values()) {
+                executor.shutdown(); // 各ExecutorServiceをシャットダウン
+            }
             ChatClient.shutdown(); // イベントループグループをシャットダウン
         }
     }

@@ -7,7 +7,6 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
 
@@ -36,7 +35,6 @@ public class ChatClient {
                  protected void initChannel(SocketChannel ch) throws Exception {
                      // クライアントのパイプラインを設定
                      ch.pipeline()
-                       .addLast(new LineBasedFrameDecoder(8192)) // 行単位でメッセージを分割
                        .addLast(new StringEncoder(CharsetUtil.UTF_8)) // UTF-8で文字列をエンコード
                        .addLast(new ChatClientHandler()); // メッセージ処理を行うハンドラを追加
                  }
