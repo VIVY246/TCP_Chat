@@ -1,4 +1,4 @@
-package com.chattool.util;
+package jp.co.vivy.chattool.util;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -19,22 +19,30 @@ public class ConnectionLogger {
         }
     }
 
-    // 接続されたときのログ記録
+    /**
+     * 接続されたときのログ記録
+     * @param clientName
+     * @param ipAddress
+     */
     public static void logConnection(String clientName, String ipAddress) {
         String timeStamp = LocalDateTime.now().format(formatter); // 現在の時刻を取得
         try (PrintWriter writer = new PrintWriter(new FileWriter(LOG_FILE, true))) {
-            writer.printf("[%s] 接続: %s (%s)%n", timeStamp, clientName, ipAddress); // ログメッセージをファイルに書き込む
+            writer.printf("[%s] CONNECTED    : %s (%s)%n", timeStamp, clientName, ipAddress); // ログメッセージをファイルに書き込む
         } catch (IOException e) {
             // エラーハンドリング
             System.err.println("ログファイルの書き込み中にエラーが発生しました: " + e.getMessage());
         }
     }
 
-    // 切断されたときのログ記録
+    /**
+     * 切断されたときのログ記録
+     * @param clientName
+     * @param ipAddress
+     */
     public static void logDisconnection(String clientName, String ipAddress) {
         String timeStamp = LocalDateTime.now().format(formatter); // 現在の時刻を取得
         try (PrintWriter writer = new PrintWriter(new FileWriter(LOG_FILE, true))) {
-            writer.printf("[%s] 切断: %s (%s)%n", timeStamp, clientName, ipAddress); // ログメッセージをファイルに書き込む
+            writer.printf("[%s] DISCONNECTED : %s (%s)%n", timeStamp, clientName, ipAddress); // ログメッセージをファイルに書き込む
         } catch (IOException e) {
             // エラーハンドリング
             System.err.println("ログファイルの書き込み中にエラーが発生しました: " + e.getMessage());

@@ -1,4 +1,4 @@
-package com.chattool.util;
+package jp.co.vivy.chattool.util;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -18,7 +18,7 @@ public class ChatLogger {
         }
     }
 
-    public static void log(String identifier, String direction, String message) {
+    public static void logChat(String identifier, Boolean isSend, String message) {
         // ログメッセージをファイルに書き込む処理
         String timestamp = java.time.LocalDateTime.now().format(formatter); // 現在の時刻を取得
         String safeIdentifier = identifier.replaceAll("[^a-zA-Z0-9]", "_"); // 特殊文字をアンダースコアに置換
@@ -31,7 +31,11 @@ public class ChatLogger {
             }
 
             try (PrintWriter writer = new PrintWriter(new FileWriter(logFile, true))) {
-                writer.printf("[%s] %s%n", timestamp, direction, message); // ログメッセージをファイルに書き込む
+                if(isSend) {
+                    writer.printf("[%s] %s%n", timestamp, "SEND   ", message); // ログメッセージをファイルに書き込む
+                } else {
+                    writer.printf("[%s] %s%n", timestamp, "RECEIVE", message); // ログメッセージをファイルに書き込む
+                }
             }
         } catch (IOException e) {
             // エラーハンドリング

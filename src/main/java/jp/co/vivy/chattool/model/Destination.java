@@ -1,4 +1,4 @@
-package com.chattool.model;
+package jp.co.vivy.chattool.model;
 
 public class Destination {
     private String ipAddress;

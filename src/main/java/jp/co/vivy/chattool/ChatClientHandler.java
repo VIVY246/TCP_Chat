@@ -1,14 +1,14 @@
-package com.chattool;
+package jp.co.vivy.chattool;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-import com.chattool.util.ChatLogger;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
+import jp.co.vivy.chattool.util.ChatLogger;
+import jp.co.vivy.chattool.util.ErrorLogger;
 
 public class ChatClientHandler extends ChannelOutboundHandlerAdapter {
 
@@ -17,18 +17,14 @@ public class ChatClientHandler extends ChannelOutboundHandlerAdapter {
         String sendTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")); // メッセージ送信時刻を取得
         System.out.println("[" + sendTime + "] " + msg); // メッセージをコンソールに出力
 
-        ChatLogger.log(ctx.name(),"SEND", (String) msg); // ログ出力
+        ChatLogger.logChat(ctx.name(), true, (String) msg); // ログ出力
         msg = msg + "\n"; // メッセージの末尾に改行を追加
         ctx.writeAndFlush(msg);
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        if(cause instanceof IOException){
-            System.err.println("リモートホストによって接続が切断されました");
-        }
-
-        System.err.println("エラーが発生しました: " + cause.getMessage()); // エラーメッセージを出力
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws IOException {
+        ErrorLogger.logError(ctx, cause.getMessage());
         ctx.close(); // チャネルを閉じる
     }
 }

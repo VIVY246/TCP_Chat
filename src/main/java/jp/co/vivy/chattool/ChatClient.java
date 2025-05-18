@@ -1,6 +1,9 @@
-package com.chattool;
+package jp.co.vivy.chattool;
+
+import java.util.Objects;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
@@ -14,6 +17,7 @@ import io.netty.util.CharsetUtil;
 public class ChatClient {
     private final String host_ip; // サーバーのホスト名またはIPアドレス
     private final int port;    // サーバーのポート番号
+    private Channel channel; // チャネルを保持する変数
 
     private static final EventLoopGroup group = new NioEventLoopGroup(); // イベントループグループを作成
 
@@ -23,9 +27,10 @@ public class ChatClient {
         this.port = port;
     }
 
-    // サーバーに接続してメッセージを送信するメソッド
-    public void send(String message) throws InterruptedException {
+    public synchronized void connect() throws InterruptedException {
         try {
+            if(Objects.nonNull(channel) && channel.isActive()) return; // 既に接続されている場合は何もしない
+
             // クライアントの初期化と設定を行う
             Bootstrap b = new Bootstrap();
             b.group(group) // イベントループグループを設定
@@ -42,15 +47,24 @@ public class ChatClient {
 
             // サーバーに接続
             ChannelFuture f = b.connect(host_ip, port).sync();
-
-            // サーバーにメッセージを送信
-            f.channel().writeAndFlush(message);
-
-            // 接続が閉じられるまで待機
-            f.channel().closeFuture().sync();
+            channel = f.channel(); // チャネルを保存
         } finally {
         }
     }
+
+    // サーバーに接続してメッセージを送信するメソッド
+    public Boolean send(String message) throws InterruptedException {
+        connect();
+
+        if(Objects.isNull(channel) || !channel.isActive()) {
+            ChannelFuture flug = channel.writeAndFlush(message);
+            return flug.isSuccess();
+        }else {
+            throw new IllegalStateException("チャネルが無効です。"); // チャネルが無効な場合は例外をスロー
+        }
+    }
+
+    // チャネルを閉じるメソッド
     public static void shutdown() {
         group.shutdownGracefully(); // イベントループグループをシャットダウン
     }

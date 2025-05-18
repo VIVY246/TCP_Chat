@@ -1,4 +1,4 @@
-package com.chattool;
+package jp.co.vivy.chattool;
 
 import java.util.concurrent.CountDownLatch;
 
